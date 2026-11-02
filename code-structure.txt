@@ -1,0 +1,35 @@
+
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+
+fastapi dev main.py
+
+askari-crm/
+└── backend/
+    ├── auth/
+    │   ├── auth.py
+    │   ├── security.py
+    │   └── dependencies.py
+    ├── routes/
+    │   ├── dashboard.py
+    │   ├── leads.py
+    │   ├── tutors.py
+    │   ├── demos.py
+    │   ├── tuitions.py
+    │   ├── follow_ups.py
+    │   └── reports.py
+    ├── models.py
+    ├── schemas.py
+    ├── database.py
+    ├── config.py
+    ├── main.py
+    ├── create_admin.py
+    ├── requirements.txt
+    ├── .env
+    ├── .env.example
+    └── alembic/
+
+
+    & "C:\Program Files\PostgreSQL\18\bin\psql.exe" -U postgres -h 127.0.0.1 -p 5432 -d askari_crm
+
+    DATABASE_URL=postgresql+psycopg://postgres:khan123@127.0.0.1:5432/askari_crm
