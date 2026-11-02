@@ -1,14 +1,10 @@
 
 <template>
-  <q-page class="q-pa-md q-pa-lg-lg">
+  <q-page class="q-pa-md q-pa-md-md">
     <!-- Header -->
-    <div class="row items-center justify-between q-mb-lg">
+    <div class="row items-center justify-between q-mb-md">
       <div>
-        <div class="text-caption text-grey-7">DEMO MANAGEMENT</div>
         <div class="text-h4 text-weight-bold">Demos</div>
-        <div class="text-grey-7 q-mt-xs">
-          Schedule demos and track parent and tutor confirmations.
-        </div>
       </div>
 
       <q-btn
@@ -21,7 +17,7 @@
     </div>
 
     <!-- Statistics -->
-    <div class="row q-col-gutter-md q-mb-lg">
+    <div class="row q-col-gutter-md q-mb-md">
       <div class="col-6 col-md-3">
         <q-card flat bordered class="stat-card">
           <q-card-section>
@@ -45,9 +41,9 @@
       <div class="col-6 col-md-3">
         <q-card flat bordered class="stat-card">
           <q-card-section>
-            <div class="text-grey-7 text-caption">Completed</div>
+            <div class="text-grey-7 text-caption">Demo Done</div>
             <div class="text-h4 text-weight-bold text-positive">
-              {{ countStatus('Completed') }}
+              {{ countStatus('Demo Done') }}
             </div>
           </q-card-section>
         </q-card>
@@ -56,9 +52,9 @@
       <div class="col-6 col-md-3">
         <q-card flat bordered class="stat-card">
           <q-card-section>
-            <div class="text-grey-7 text-caption">No-show</div>
-            <div class="text-h4 text-weight-bold text-negative">
-              {{ countStatus('No-show') }}
+            <div class="text-grey-7 text-caption">Rescheduled</div>
+            <div class="text-h4 text-weight-bold text-warning">
+              {{ countStatus('Rescheduled') }}
             </div>
           </q-card-section>
         </q-card>
@@ -66,7 +62,7 @@
     </div>
 
     <!-- Confirmation Summary -->
-    <div class="row q-col-gutter-md q-mb-lg">
+    <div class="row q-col-gutter-md q-mb-md">
       <div class="col-12 col-md-6">
         <q-card flat bordered>
           <q-card-section class="row items-center">
@@ -281,6 +277,8 @@
                 emit-value
                 map-options
                 clearable
+                use-input
+                input-debounce="0"
                 outlined
                 label="Assign Tutor"
               />
@@ -340,7 +338,7 @@
           <div>
             <div class="text-h6 text-weight-bold">Update Demo</div>
             <div class="text-caption text-grey-7">
-              Update confirmations, status and outcome.
+              Update tutor, status, confirmations and outcome.
             </div>
           </div>
           <q-space />
@@ -352,6 +350,15 @@
         <q-form @submit.prevent="updateDemo">
           <q-card-section>
             <div class="q-gutter-md">
+              <!-- Parent Name: Read Only -->
+              <q-input
+                :model-value="getLead(selectedDemo?.lead_id)?.parent_name || ''"
+                outlined
+                label="Parent Name"
+                disable
+              />
+
+              <!-- Assigned Tutor -->
               <q-select
                 v-model="editForm.tutor_id"
                 :options="tutorOptions"
@@ -360,15 +367,20 @@
                 emit-value
                 map-options
                 clearable
+                use-input
+                input-debounce="0"
                 outlined
                 label="Assigned Tutor"
               />
 
+              <!-- Demo Status -->
               <q-select
                 v-model="editForm.status"
-                :options="statusOptions.filter(s => s !== 'All')"
+                :options="demoStatusOptions"
                 outlined
                 label="Demo Status"
+                emit-value
+                map-options
               />
 
               <div class="text-subtitle2">Confirmation Status</div>
@@ -385,13 +397,13 @@
                 color="positive"
               />
 
-              <q-select
+              <!-- <q-select
                 v-model="editForm.result"
                 :options="resultOptions"
                 clearable
                 outlined
                 label="Demo Result"
-              />
+              /> -->
 
               <q-input
                 v-model="editForm.notes"
@@ -455,11 +467,11 @@
           <div><strong>Time:</strong> {{ formatTime(selectedDemo.demo_time) }}</div>
           <div><strong>Status:</strong> {{ selectedDemo.status }}</div>
           <div>
-            <strong>Parent:</strong>
+            <strong>Parent Confirmation:</strong>
             {{ selectedDemo.parent_confirmed ? 'Confirmed' : 'Pending' }}
           </div>
           <div>
-            <strong>Tutor:</strong>
+            <strong>Tutor Confirmation:</strong>
             {{ selectedDemo.tutor_confirmed ? 'Confirmed' : 'Pending' }}
           </div>
           <div><strong>Result:</strong> {{ selectedDemo.result || 'Not recorded' }}</div>
@@ -481,51 +493,65 @@ import { useQuasar } from 'quasar'
 
 const $q = useQuasar()
 
+// Data
 const demos = ref([])
 const leads = ref([])
 const tutors = ref([])
 
+// Loading states
 const loading = ref(false)
 const saving = ref(false)
 
+// Filters
 const search = ref('')
 const statusFilter = ref('All')
 
+// Dialogs
 const createDialog = ref(false)
 const editDialog = ref(false)
 const detailsDialog = ref(false)
 
 const selectedDemo = ref(null)
 
+// Demo statuses
 const statusOptions = [
   'All',
   'Scheduled',
-  'Completed',
   'Rescheduled',
   'Cancelled',
-  'No-show'
+  'Demo Done'
 ]
 
-const resultOptions = [
-  'Interested',
-  'Not Interested',
-  'Follow-up Required',
-  'Tuition Closed',
-  'Pending'
+const demoStatusOptions = [
+  { label: 'Scheduled', value: 'Scheduled' },
+  { label: 'Rescheduled', value: 'Rescheduled' },
+  { label: 'Cancelled', value: 'Cancelled' },
+  { label: 'Demo Done', value: 'Demo Done' }
 ]
 
+// Demo results
+// const resultOptions = [
+//   'Interested',
+//   'Not Interested',
+//   'Follow-up Required',
+//   'Tuition Closed',
+//   'Pending'
+// ]
+
+// Table columns
 const columns = [
   { name: 'id', label: 'Demo ID', field: 'id', align: 'left', sortable: true },
   { name: 'lead', label: 'Parent / Lead', field: 'lead_id', align: 'left' },
   { name: 'tutor', label: 'Tutor', field: 'tutor_id', align: 'left' },
   { name: 'date', label: 'Date & Time', field: 'demo_date', align: 'left', sortable: true },
   { name: 'status', label: 'Status', field: 'status', align: 'left' },
-  { name: 'result', label: 'Result', field: 'result', align: 'left' },
+  // { name: 'result', label: 'Result', field: 'result', align: 'left' },
   { name: 'confirmations', label: 'Confirmations', field: 'parent_confirmed', align: 'left' },
-  { name: 'notes', label: 'Notes', field: 'notes ', align: 'left' },
+  { name: 'notes', label: 'Notes', field: 'notes', align: 'left' },
   { name: 'actions', label: 'Actions', field: 'id', align: 'center' }
 ]
 
+// Empty create form
 const emptyCreateForm = () => ({
   lead_id: null,
   tutor_id: null,
@@ -536,6 +562,7 @@ const emptyCreateForm = () => ({
 
 const form = ref(emptyCreateForm())
 
+// Edit form
 const editForm = ref({
   id: null,
   tutor_id: null,
@@ -546,22 +573,27 @@ const editForm = ref({
   notes: ''
 })
 
+// Only New Lead parents can be selected
 const leadOptions = computed(() =>
-  leads.value.map(lead => ({
-    value: lead.id,
-    label: `${lead.parent_name} — ${lead.student_class} — ${lead.parent_phone}`
-  }))
+  leads.value
+    .filter(lead => lead.status === 'New Lead')
+    .map(lead => ({
+      value: lead.id,
+      label: `${lead.parent_name} — ${lead.student_class || ''} — ${lead.parent_phone || ''}`
+    }))
 )
 
+// Only active tutors
 const tutorOptions = computed(() =>
   tutors.value
     .filter(tutor => tutor.is_active)
     .map(tutor => ({
       value: tutor.id,
-      label: `${tutor.full_name} — ${tutor.phone}`
+      label: `${tutor.full_name} — ${tutor.phone || ''}`
     }))
 )
 
+// Filter demos
 const filteredDemos = computed(() => {
   const query = search.value.toLowerCase().trim()
 
@@ -576,11 +608,14 @@ const filteredDemos = computed(() => {
       lead?.student_class,
       lead?.location,
       tutor?.full_name,
+      tutor?.phone,
       demo.status,
-      demo.result
+      demo.result,
+      demo.notes
     ].join(' ').toLowerCase()
 
     const matchesSearch = searchable.includes(query)
+
     const matchesStatus =
       statusFilter.value === 'All' ||
       demo.status === statusFilter.value
@@ -589,12 +624,15 @@ const filteredDemos = computed(() => {
   })
 })
 
+// Count demos by status
 const countStatus = status =>
   demos.value.filter(demo => demo.status === status).length
 
+// Find lead
 const getLead = id =>
   leads.value.find(lead => lead.id === id)
 
+// Find tutor
 const getTutor = id =>
   tutors.value.find(tutor => tutor.id === id)
 
@@ -611,11 +649,13 @@ const formatDate = value => {
   })
 }
 
+// Time formatting
 const formatTime = value => {
   if (!value) return 'Time not set'
 
   const parts = value.split(':')
   const date = new Date()
+
   date.setHours(Number(parts[0]), Number(parts[1]), 0, 0)
 
   return date.toLocaleTimeString('en-PK', {
@@ -624,13 +664,13 @@ const formatTime = value => {
   })
 }
 
+// Status colors
 const statusColor = status => {
   const colors = {
     Scheduled: 'primary',
-    Completed: 'positive',
+    'Demo Done': 'positive',
     Rescheduled: 'warning',
-    Cancelled: 'negative',
-    'No-show': 'grey-8'
+    Cancelled: 'negative'
   }
 
   return colors[status] || 'grey'
@@ -655,20 +695,21 @@ const fetchData = async () => {
 
     $q.notify({
       type: 'negative',
-      message: 'Data load nahi ho saka. Backend aur API check karein.'
+      message: error.response?.data?.detail ||
+        'Data load nahi ho saka. Backend aur API check karein.'
     })
   } finally {
     loading.value = false
   }
 }
 
-// Create dialog
+// Open Create Dialog
 const openCreateDialog = () => {
   form.value = emptyCreateForm()
   createDialog.value = true
 }
 
-// Create demo
+// Create Demo
 const createDemo = async () => {
   saving.value = true
 
@@ -710,7 +751,7 @@ const createDemo = async () => {
   }
 }
 
-// Edit dialog
+// Open Edit Dialog
 const openEditDialog = demo => {
   selectedDemo.value = demo
 
@@ -727,7 +768,7 @@ const openEditDialog = demo => {
   editDialog.value = true
 }
 
-// Update demo using PATCH
+// Update Demo
 const updateDemo = async () => {
   saving.value = true
 
@@ -749,6 +790,7 @@ const updateDemo = async () => {
     })
 
     editDialog.value = false
+
     await fetchData()
   } catch (error) {
     console.error('Error updating demo:', error)
@@ -764,12 +806,13 @@ const updateDemo = async () => {
   }
 }
 
-// Details
+// Show Details
 const showDetails = demo => {
   selectedDemo.value = demo
   detailsDialog.value = true
 }
 
+// Initial load
 onMounted(() => {
   fetchData()
 })
@@ -777,8 +820,9 @@ onMounted(() => {
 
 <style scoped>
 .q-page {
-    background: aliceblue;
+  background: aliceblue;
 }
+
 .stat-card {
   border-radius: 12px;
 }
