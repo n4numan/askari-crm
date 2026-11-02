@@ -22,12 +22,12 @@ class Lead(Base):
     id = Column(Integer, primary_key=True, index=True)
     lead_code = Column(String(30), unique=True, index=True, nullable=False)
     # Parent information
-    parent_name = Column(String(100), nullable=False)
+    parent_name = Column(String(100), nullable=True)
     parent_phone = Column(String(20), nullable=False)
     # Student requirements
-    student_class = Column(String(100), nullable=False)
+    student_class = Column(String(100), nullable=True)
     subjects = Column(Text, nullable=True)
-    location = Column(String(200), nullable=True)
+    location = Column(String(200), nullable=False)
     monthly_budget = Column(Integer, nullable=True)
     # Lead tracking
     status = Column(String(50),default="New Lead",nullable=False,index=True)
@@ -41,7 +41,7 @@ class Lead(Base):
     tutor = relationship("Tutor",back_populates="assigned_leads",foreign_keys=[tutor_id])
     demos = relationship("Demo",back_populates="lead",cascade="all, delete-orphan")
     follow_ups = relationship("FollowUp",back_populates="lead",cascade="all, delete-orphan")
-    tuition = relationship("Tuition",back_populates="lead",uselist=False)
+    tuition = relationship("Tuition",back_populates="lead",uselist=False,cascade="all, delete-orphan")
 
 
 # 2. TUTORS
@@ -76,7 +76,7 @@ class Demo(Base):
     tutor_id = Column(Integer,ForeignKey("tutors.id", ondelete="SET NULL"),nullable=True,index=True)
     demo_date = Column(Date, nullable=False)
     demo_time = Column(Time, nullable=True)
-    # Scheduled, Completed, Rescheduled, Cancelled, No-show
+    # Scheduled, Rescheduled, Cancelled, Demo Done
     status = Column(String(50),default="Scheduled",nullable=False)
     parent_confirmed = Column(Boolean, default=False, nullable=False)
     tutor_confirmed = Column(Boolean, default=False, nullable=False)
